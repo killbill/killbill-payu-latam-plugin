@@ -1,6 +1,41 @@
+# See http://docs.payulatam.com/en/api-integration/proof-of-payment/
 :payu_latam:
-  :test: true
-  :log_file: /var/tmp/payu_latam.log
+  - :account_id: colombia
+    :test: true
+    :api_login: 11959c415b33d0c
+    :api_key: 6u39nqhq8ftd0hlvnjfs66eh8c
+    :country_account_id: 500538
+    :merchant_id: 500238
+  - :account_id: panama
+    :test: true
+    :api_login: 11959c415b33d0c
+    :api_key: 6u39nqhq8ftd0hlvnjfs66eh8c
+    :country_account_id: 500537
+    :merchant_id: 500238
+  - :account_id: peru
+    :test: true
+    :api_login: 11959c415b33d0c
+    :api_key: 6u39nqhq8ftd0hlvnjfs66eh8c
+    :country_account_id: 500546
+    :merchant_id: 500238
+  - :account_id: mexico
+    :test: true
+    :api_login: 11959c415b33d0c
+    :api_key: 6u39nqhq8ftd0hlvnjfs66eh8c
+    :country_account_id: 500547
+    :merchant_id: 500238
+  - :account_id: argentina
+    :test: true
+    :api_login: 11959c415b33d0c
+    :api_key: 6u39nqhq8ftd0hlvnjfs66eh8c
+    :country_account_id: 509171
+    :merchant_id: 500238
+  - :account_id: brazil
+    :test: true
+    :api_login: 403ba744e9827f3
+    :api_key: 676k86ks53la6tni6clgd30jf6
+    :country_account_id: 500719
+    :merchant_id: 500365
 
 :database:
   :adapter: sqlite3

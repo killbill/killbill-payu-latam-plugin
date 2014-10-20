@@ -4,8 +4,10 @@ module Killbill #:nodoc:
 
       def initialize
         gateway_builder = Proc.new do |config|
-          # Change this if needed
-          ::ActiveMerchant::Billing::PayuLatamGateway.new :login => config[:login]
+          ::ActiveMerchant::Billing::PayULatamGateway.new :api_login          => config[:api_login],
+                                                          :api_key            => config[:api_key],
+                                                          :country_account_id => config[:country_account_id],
+                                                          :merchant_id        => config[:merchant_id]
         end
 
         super(gateway_builder,
@@ -19,6 +21,8 @@ module Killbill #:nodoc:
         # Pass extra parameters for the gateway here
         options = {}
 
+        add_required_options(properties, options)
+
         properties = merge_properties(properties, options)
         super(kb_account_id, kb_payment_id, kb_payment_transaction_id, kb_payment_method_id, amount, currency, properties, context)
       end
@@ -26,6 +30,8 @@ module Killbill #:nodoc:
       def capture_payment(kb_account_id, kb_payment_id, kb_payment_transaction_id, kb_payment_method_id, amount, currency, properties, context)
         # Pass extra parameters for the gateway here
         options = {}
+
+        add_required_options(properties, options)
 
         properties = merge_properties(properties, options)
         super(kb_account_id, kb_payment_id, kb_payment_transaction_id, kb_payment_method_id, amount, currency, properties, context)
@@ -35,6 +41,8 @@ module Killbill #:nodoc:
         # Pass extra parameters for the gateway here
         options = {}
 
+        add_required_options(properties, options)
+
         properties = merge_properties(properties, options)
         super(kb_account_id, kb_payment_id, kb_payment_transaction_id, kb_payment_method_id, amount, currency, properties, context)
       end
@@ -42,6 +50,8 @@ module Killbill #:nodoc:
       def void_payment(kb_account_id, kb_payment_id, kb_payment_transaction_id, kb_payment_method_id, properties, context)
         # Pass extra parameters for the gateway here
         options = {}
+
+        add_required_options(properties, options)
 
         properties = merge_properties(properties, options)
         super(kb_account_id, kb_payment_id, kb_payment_transaction_id, kb_payment_method_id, properties, context)
@@ -51,6 +61,8 @@ module Killbill #:nodoc:
         # Pass extra parameters for the gateway here
         options = {}
 
+        add_required_options(properties, options)
+
         properties = merge_properties(properties, options)
         super(kb_account_id, kb_payment_id, kb_payment_transaction_id, kb_payment_method_id, amount, currency, properties, context)
       end
@@ -58,6 +70,8 @@ module Killbill #:nodoc:
       def refund_payment(kb_account_id, kb_payment_id, kb_payment_transaction_id, kb_payment_method_id, amount, currency, properties, context)
         # Pass extra parameters for the gateway here
         options = {}
+
+        add_required_options(properties, options)
 
         properties = merge_properties(properties, options)
         super(kb_account_id, kb_payment_id, kb_payment_transaction_id, kb_payment_method_id, amount, currency, properties, context)
@@ -81,7 +95,11 @@ module Killbill #:nodoc:
 
       def add_payment_method(kb_account_id, kb_payment_method_id, payment_method_props, set_default, properties, context)
         # Pass extra parameters for the gateway here
-        options = {}
+        options = {
+            :payer_user_id => kb_account_id
+        }
+
+        add_required_options(properties, options)
 
         properties = merge_properties(properties, options)
         super(kb_account_id, kb_payment_method_id, payment_method_props, set_default, properties, context)
@@ -153,6 +171,13 @@ module Killbill #:nodoc:
           # Set the response body
           # gw_notification.entity =
         end
+      end
+
+      private
+
+      def add_required_options(properties, options)
+        language = find_value_from_properties(properties, 'language') || 'en'
+        options[:language] ||= language
       end
     end
   end

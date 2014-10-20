@@ -7,6 +7,9 @@ describe Killbill::PayuLatam::PaymentPlugin do
   include ::Killbill::Plugin::ActiveMerchant::RSpec
 
   before(:each) do
+    # PayULatamGateway's test server has an improperly installed cert
+    ::ActiveMerchant::Billing::PayULatamGateway.ssl_strict = false
+
     @plugin = Killbill::PayuLatam::PaymentPlugin.new
 
     @account_api    = ::Killbill::Plugin::ActiveMerchant::RSpec::FakeJavaUserAccountApi.new
@@ -24,9 +27,14 @@ describe Killbill::PayuLatam::PaymentPlugin do
     @plugin.start_plugin
 
     @properties = []
-    @pm         = create_payment_method(::Killbill::PayuLatam::PayuLatamPaymentMethod, nil, @call_context.tenant_id, @properties)
-    @amount     = BigDecimal.new('100')
-    @currency   = 'USD'
+    # Go through Brazil (supports auth/capture)
+    @properties << create_pm_kv_info('payment_processor_account_id', 'brazil')
+    # Required CVV for token-based transactions
+    @properties << create_pm_kv_info('security_code', '123')
+
+    @pm         = create_payment_method(::Killbill::PayuLatam::PayuLatamPaymentMethod, nil, @call_context.tenant_id, @properties, valid_cc_info)
+    @amount     = BigDecimal.new('500')
+    @currency   = 'BRL'
 
     kb_payment_id = SecureRandom.uuid
     1.upto(6) do
@@ -39,7 +47,7 @@ describe Killbill::PayuLatam::PaymentPlugin do
   end
 
   it 'should be able to charge a Credit Card directly' do
-    properties = build_pm_properties
+    properties = build_pm_properties(nil, valid_cc_info)
 
     # We created the payment method, hence the rows
     Killbill::PayuLatam::PayuLatamResponse.all.size.should == 1
@@ -55,7 +63,7 @@ describe Killbill::PayuLatam::PaymentPlugin do
     responses[0].api_call.should == 'add_payment_method'
     responses[0].message.should == 'Successful transaction'
     responses[1].api_call.should == 'purchase'
-    responses[1].message.should == 'Successful transaction'
+    responses[1].message.should == 'The transaction was approved'
     transactions = Killbill::PayuLatam::PayuLatamTransaction.all
     transactions.size.should == 1
     transactions[0].api_call.should == 'purchase'
@@ -128,5 +136,12 @@ describe Killbill::PayuLatam::PaymentPlugin do
     payment_response = @plugin.void_payment(@pm.kb_account_id, @kb_payment.id, @kb_payment.transactions[2].id, @pm.kb_payment_method_id, @properties, @call_context)
     payment_response.status.should eq(:PROCESSED), payment_response.gateway_error
     payment_response.transaction_type.should == :VOID
+  end
+
+  private
+
+  def valid_cc_info
+    # Enter APPROVED for the cardholder name value if you want the transaction to be approved or REJECTED if you want it to be rejected
+    {:cc_last_name => 'APPROVED'}
   end
 end
