@@ -1,12 +1,36 @@
-*.class
+*.gem
+*.rbc
+*.swp
+.bundle
+.config
+coverage
+InstalledFiles
+lib/bundler/man
+pkg
+rdoc
+spec/reports
+test/tmp
+test/version_tmp
+tmp
 
-# Mobile Tools for Java (J2ME)
-.mtj.tmp/
+# YARD artifacts
+.yardoc
+_yardoc
+doc/
 
-# Package Files #
-*.jar
-*.war
-*.ear
+.jbundler
+Jarfile.lock
+Gemfile.lock
 
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
-hs_err_pid*
+.DS_Store
+
+# Build directory
+killbill-payu-latam/
+
+# Testing database
+test.db
+
+target
+pom.xml.asc
+
+.idea/
