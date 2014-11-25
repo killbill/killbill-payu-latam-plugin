@@ -2,6 +2,16 @@ require 'spec_helper'
 
 ActiveMerchant::Billing::Base.mode = :test
 
+module ActiveMerchant #:nodoc:
+  module Billing #:nodoc:
+    class CreditCard < Model
+      def number=(value)
+        @number = value
+      end
+    end
+  end
+end
+
 describe Killbill::PayuLatam::PaymentPlugin do
 
   include ::Killbill::Plugin::ActiveMerchant::RSpec
@@ -15,7 +25,7 @@ describe Killbill::PayuLatam::PaymentPlugin do
     @account_api    = ::Killbill::Plugin::ActiveMerchant::RSpec::FakeJavaUserAccountApi.new
     @payment_api    = ::Killbill::Plugin::ActiveMerchant::RSpec::FakeJavaPaymentApi.new
     svcs            = {:account_user_api => @account_api, :payment_api => @payment_api}
-    @plugin.kb_apis = Killbill::Plugin::KillbillApi.new('cybersource', svcs)
+    @plugin.kb_apis = Killbill::Plugin::KillbillApi.new('payu', svcs)
 
     @call_context           = ::Killbill::Plugin::Model::CallContext.new
     @call_context.tenant_id = '00000011-0022-0033-0044-000000000055'
@@ -31,10 +41,11 @@ describe Killbill::PayuLatam::PaymentPlugin do
     @properties << create_pm_kv_info('payment_processor_account_id', 'brazil')
     # Required CVV for token-based transactions
     @properties << create_pm_kv_info('security_code', '123')
+    @properties << create_pm_kv_info('payment_country', 'BR')
 
-    @pm         = create_payment_method(::Killbill::PayuLatam::PayuLatamPaymentMethod, nil, @call_context.tenant_id, @properties, valid_cc_info)
-    @amount     = BigDecimal.new('500')
-    @currency   = 'BRL'
+    @pm       = create_payment_method(::Killbill::PayuLatam::PayuLatamPaymentMethod, nil, @call_context.tenant_id, @properties, valid_cc_info)
+    @amount   = BigDecimal.new('500')
+    @currency = 'BRL'
 
     kb_payment_id = SecureRandom.uuid
     1.upto(6) do
@@ -141,7 +152,11 @@ describe Killbill::PayuLatam::PaymentPlugin do
   private
 
   def valid_cc_info
-    # Enter APPROVED for the cardholder name value if you want the transaction to be approved or REJECTED if you want it to be rejected
-    {:cc_last_name => 'APPROVED'}
+    {
+        # We can't use the default credit card number as it's seen as a US one (the testing account doesn't allow international credit cards)
+        :cc_number    => '4422120000000008',
+        # Enter APPROVED for the cardholder name value if you want the transaction to be approved or REJECTED if you want it to be rejected
+        :cc_last_name => 'APPROVED'
+    }
   end
 end
