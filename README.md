@@ -1,7 +1,7 @@
 killbill-payu-latam-plugin
 ==========================
 
-Plugin to use [PayU Latam](http://www.payulatam.com/) as a gateway
+Plugin to use [PayU Latam](http://www.payulatam.com/) as a gateway.
 
 Release builds are available on [Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22org.kill-bill.billing.plugin.ruby%22%20AND%20a%3A%22payu-latam-plugin%22) with coordinates `org.kill-bill.billing.plugin.ruby:payu-latam-plugin`.
 
