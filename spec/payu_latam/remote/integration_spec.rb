@@ -12,6 +12,17 @@ module ActiveMerchant #:nodoc:
   end
 end
 
+class PayUJavaPaymentApi < ::Killbill::Plugin::ActiveMerchant::RSpec::FakeJavaPaymentApi
+
+  def get_account_payment_methods(kb_account_id, plugin_info, properties, context)
+    [OpenStruct.new(:plugin_name => 'killbill-payu-latam', :id => SecureRandom.uuid)]
+  end
+
+  def create_purchase(kb_account, kb_payment_method_id, kb_payment_id, amount, currency, payment_external_key, payment_transaction_external_key, properties, context)
+    add_payment(SecureRandom.uuid, SecureRandom.uuid, payment_transaction_external_key, :PURCHASE)
+  end
+end
+
 describe Killbill::PayuLatam::PaymentPlugin do
 
   include ::Killbill::Plugin::ActiveMerchant::RSpec
@@ -23,7 +34,7 @@ describe Killbill::PayuLatam::PaymentPlugin do
     @plugin = Killbill::PayuLatam::PaymentPlugin.new
 
     @account_api    = ::Killbill::Plugin::ActiveMerchant::RSpec::FakeJavaUserAccountApi.new
-    @payment_api    = ::Killbill::Plugin::ActiveMerchant::RSpec::FakeJavaPaymentApi.new
+    @payment_api    = PayUJavaPaymentApi.new
     svcs            = {:account_user_api => @account_api, :payment_api => @payment_api}
     @plugin.kb_apis = Killbill::Plugin::KillbillApi.new('payu', svcs)
 
@@ -151,6 +162,66 @@ describe Killbill::PayuLatam::PaymentPlugin do
   #  payment_response.status.should eq(:PROCESSED), payment_response.gateway_error
   #  payment_response.transaction_type.should == :VOID
   #end
+
+  # HPP
+  it 'should generate vouchers correctly' do
+    properties         = [create_pm_kv_info('payment_processor_account_id', 'colombia')]
+    nb_payments        = @payment_api.payments.size
+
+    # Generate the voucher
+    payment_properties = {
+        :externalKey => SecureRandom.uuid,
+        :amount      => 6000,
+        :currency    => 'COP'
+    }
+    descriptor_fields  = @plugin.hash_to_properties(payment_properties)
+    descriptor         = @plugin.build_form_descriptor(@pm.kb_account_id, descriptor_fields, properties, @plugin.kb_apis.create_context(@call_context.tenant_id))
+
+    # Verify the descriptor
+    descriptor.kb_account_id.should == @pm.kb_account_id
+    descriptor.form_method.should == 'GET'
+    descriptor.form_url.should_not be_nil
+    # For manual debugging
+    puts "Redirect to: #{descriptor.form_url}"
+    payu_order_id = @plugin.find_value_from_properties(descriptor.form_fields, 'order_id')
+    payu_order_id.should_not be_nil
+    payu_transaction_id = @plugin.find_value_from_properties(descriptor.form_fields, 'transaction_id')
+    payu_transaction_id.should_not be_nil
+
+    # Verify the pending payment has been created in Kill Bill
+    @payment_api.payments.size.should == nb_payments + 1
+    payment = @payment_api.payments[-1]
+    payment.transactions.size.should == 1
+    payment.transactions[0].external_key.should == payment_properties[:externalKey]
+
+    # Trigger manually the purchase call (this is done automatically in a live system)
+    properties << create_pm_kv_info('from_hpp', 'true')
+    properties << create_pm_kv_info('payu_order_id', payu_order_id)
+    properties << create_pm_kv_info('payu_transaction_id', payu_transaction_id)
+    payment_response = @plugin.purchase_payment(@pm.kb_account_id, payment.id, payment.transactions[0].id, @pm.id, payment_properties[:amount], payment_properties[:currency], properties, @plugin.kb_apis.create_context(@call_context.tenant_id))
+    payment_response.status.should == :PENDING
+
+    # Verify the response row was created
+    response = Killbill::PayuLatam::PayuLatamResponse.all[-1]
+    response.kb_account_id.should == @pm.kb_account_id
+    response.kb_payment_id.should == payment.id
+    response.kb_payment_transaction_id.should == payment.transactions[0].id
+    response.transaction_type.should == 'PURCHASE'
+    response.authorization.should == "#{payu_order_id};#{payu_transaction_id}"
+    response.payment_processor_account_id.should == 'colombia'
+    response.kb_tenant_id.should == @call_context.tenant_id
+
+    # Verify the payment in PayU
+    t_info_plugins = @plugin.get_payment_info(@pm.kb_account_id, payment.id, properties, @plugin.kb_apis.create_context(@call_context.tenant_id))
+    t_info_plugins.size.should == 1
+    t_info_plugin = t_info_plugins[0]
+    t_info_plugin.status.should == :PENDING
+    t_info_plugin.kb_payment_id.should == payment.id
+    t_info_plugin.kb_transaction_payment_id.should == payment.transactions[0].id
+    t_info_plugin.transaction_type.should == :PURCHASE
+    #t_info_plugin.amount.should == payment_properties[:amount]
+    #t_info_plugin.currency.should == payment_properties[:currency]
+  end
 
   private
 
