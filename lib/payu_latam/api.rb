@@ -195,13 +195,13 @@ module Killbill #:nodoc:
         payment_external_key             = payu_response[:order_id]
         payment_transaction_external_key = payu_reference_code
         # See purchase call above
-        properties                       = {:from_hpp => true, :payu_order_id => payu_response[:order_id], :payu_transaction_id => payu_response[:transaction_id]}
+        properties                       = hash_to_properties(:from_hpp => true, :payu_order_id => payu_response[:order_id], :payu_transaction_id => payu_response[:transaction_id])
 
         @kb_apis.payment_api.create_purchase(kb_account,
                                              kb_payment_method_id,
                                              kb_payment_id,
-                                             options[:amount],
-                                             options[:currency],
+                                             form_fields[:amount],
+                                             form_fields[:currency] || kb_account.currency,
                                              payment_external_key,
                                              payment_transaction_external_key,
                                              properties,
