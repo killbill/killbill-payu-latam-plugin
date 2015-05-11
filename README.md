@@ -30,13 +30,11 @@ curl -v \
      -H 'Content-Type: text/plain' \
      -d ':payu_latam:
   - :account_id: colombia
-    :test: true
     :api_login: 11959c415b33d0c
     :api_key: 6u39nqhq8ftd0hlvnjfs66eh8c
     :country_account_id: 500538
     :merchant_id: 500238
   - :account_id: panama
-    :test: true
     :api_login: 11959c415b33d0c
     :api_key: 6u39nqhq8ftd0hlvnjfs66eh8c
     :country_account_id: 500537
@@ -44,7 +42,14 @@ curl -v \
      http://127.0.0.1:8080/1.0/kb/tenants/uploadPluginConfig/killbill-payu-latam
 ```
 
-To go to production, create a `payu_latam.yml` configuration file under `/var/tmp/bundles/plugins/ruby/killbill-payu-latam/x.y.z/` containing the following:
+Because PayU Latam test servers have an improperly installed cert, you maye need a `payu_latam.yml` configuration file under `/var/tmp/bundles/plugins/ruby/killbill-payu-latam/x.y.z/` containing the following:
+
+```
+:payu_latam:
+  :ssl_strict: false
+```
+
+To go to production, specify:
 
 ```
 :payu_latam:
@@ -71,6 +76,14 @@ curl -v \
        "pluginInfo": {
          "properties": [
            {
+             "key": "ccCountry",
+             "value": "BR"
+           },
+           {
+             "key": "zip",
+             "value": "19999-999"
+           },
+           {
              "key": "ccLastName",
              "value": "APPROVED"
            },
@@ -84,7 +97,7 @@ curl -v \
            },
            {
              "key": "ccNumber",
-             "value": 4111111111111111
+             "value": 4422120000000008
            }
          ]
        }
