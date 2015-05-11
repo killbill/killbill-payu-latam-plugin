@@ -245,13 +245,15 @@ module Killbill #:nodoc:
         kb_payment.transactions.each do |transaction|
           t_info_plugins << get_payment_transaction_info_from_payu(kb_payment_id, transaction.id, transaction.amount, transaction.currency, options, context.tenant_id)
         end
-        t_info_plugins
+        t_info_plugins.compact
       end
 
       def get_payment_transaction_info_from_payu(kb_payment_id, kb_payment_transaction_id, amount, currency, options, kb_tenant_id, response=nil)
         # Guaranteed to have a unique mapping KB transaction <=> PayU HPP creation
         response = @response_model.where("transaction_type = 'PURCHASE' AND kb_payment_id = '#{kb_payment_id}' AND kb_payment_transaction_id = '#{kb_payment_transaction_id}' AND kb_tenant_id = '#{kb_tenant_id}'").order(:created_at)[0] if response.nil?
         raise "Unable to retrieve response for kb_payment_id=#{kb_payment_id}, kb_payment_transaction_id=#{kb_payment_transaction_id}, kb_tenant_id=#{kb_tenant_id}" if response.nil?
+
+        return nil if response.authorization.nil?
 
         # Retrieve the transaction from PayU
         order_id, transaction_id = response.authorization.split(';')
