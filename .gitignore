@@ -19,18 +19,17 @@ _yardoc
 doc/
 
 .jbundler
-Jarfile.lock
-Gemfile.lock
 
 .DS_Store
 
-# Build directory
-killbill-payu-latam/
-
 # Testing database
 test.db
+
+payu_latam.log
 
 target
 pom.xml.asc
 
 .idea/
+
+Gemfile.head.lock

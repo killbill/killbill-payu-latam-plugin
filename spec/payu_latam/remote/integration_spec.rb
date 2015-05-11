@@ -31,36 +31,35 @@ describe Killbill::PayuLatam::PaymentPlugin do
     # PayULatamGateway's test server has an improperly installed cert
     ::ActiveMerchant::Billing::PayULatamGateway.ssl_strict = false
 
-    @plugin = Killbill::PayuLatam::PaymentPlugin.new
+    ::Killbill::PayuLatam::PayuLatamPaymentMethod.delete_all
+    ::Killbill::PayuLatam::PayuLatamResponse.delete_all
+    ::Killbill::PayuLatam::PayuLatamTransaction.delete_all
 
-    @account_api    = ::Killbill::Plugin::ActiveMerchant::RSpec::FakeJavaUserAccountApi.new
-    @payment_api    = PayUJavaPaymentApi.new
-    svcs            = {:account_user_api => @account_api, :payment_api => @payment_api}
-    @plugin.kb_apis = Killbill::Plugin::KillbillApi.new('payu', svcs)
+    @payment_api = PayUJavaPaymentApi.new
 
-    @call_context           = ::Killbill::Plugin::Model::CallContext.new
-    @call_context.tenant_id = '00000011-0022-0033-0044-000000000055'
-    @call_context           = @call_context.to_ruby(@call_context)
+    @plugin = build_plugin(::Killbill::PayuLatam::PaymentPlugin, 'payu_latam')
+    svcs = @plugin.kb_apis.proxied_services
+    svcs[:payment_api] = @payment_api
+    @plugin.kb_apis = ::Killbill::Plugin::KillbillApi.new('payu_latam', svcs)
 
-    @plugin.logger       = Logger.new(STDOUT)
-    @plugin.logger.level = Logger::INFO
-    @plugin.conf_dir     = File.expand_path(File.dirname(__FILE__) + '../../../../')
     @plugin.start_plugin
+
+    @call_context = build_call_context
 
     @properties = []
     # Go through Brazil (supports auth/capture)
-    @properties << create_pm_kv_info('payment_processor_account_id', 'brazil')
+    @properties << build_property('payment_processor_account_id', 'brazil')
     # Required CVV for token-based transactions
-    @properties << create_pm_kv_info('security_code', '123')
-    @properties << create_pm_kv_info('payment_country', 'BR')
+    @properties << build_property('security_code', '123')
+    @properties << build_property('payment_country', 'BR')
 
-    @pm       = create_payment_method(::Killbill::PayuLatam::PayuLatamPaymentMethod, nil, @call_context.tenant_id, @properties, valid_cc_info)
-    @amount   = BigDecimal.new('500')
-    @currency = 'BRL'
+    @pm         = create_payment_method(::Killbill::PayuLatam::PayuLatamPaymentMethod, nil, @call_context.tenant_id, @properties, valid_cc_info)
+    @amount     = BigDecimal.new('500')
+    @currency   = 'BRL'
 
     kb_payment_id = SecureRandom.uuid
     1.upto(6) do
-      @kb_payment = @payment_api.add_payment(kb_payment_id)
+      @kb_payment = @plugin.kb_apis.proxied_services[:payment_api].add_payment(kb_payment_id)
     end
   end
 
@@ -165,7 +164,7 @@ describe Killbill::PayuLatam::PaymentPlugin do
 
   # HPP
   it 'should generate vouchers correctly' do
-    properties         = [create_pm_kv_info('payment_processor_account_id', 'colombia')]
+    properties         = [build_property('payment_processor_account_id', 'colombia')]
     nb_payments        = @payment_api.payments.size
 
     # Generate the voucher
@@ -195,9 +194,9 @@ describe Killbill::PayuLatam::PaymentPlugin do
     payment.transactions[0].external_key.should == payment_properties[:externalKey]
 
     # Trigger manually the purchase call (this is done automatically in a live system)
-    properties << create_pm_kv_info('from_hpp', 'true')
-    properties << create_pm_kv_info('payu_order_id', payu_order_id)
-    properties << create_pm_kv_info('payu_transaction_id', payu_transaction_id)
+    properties << build_property('from_hpp', 'true')
+    properties << build_property('payu_order_id', payu_order_id)
+    properties << build_property('payu_transaction_id', payu_transaction_id)
     payment_response = @plugin.purchase_payment(@pm.kb_account_id, payment.id, payment.transactions[0].id, @pm.id, payment_properties[:amount], payment_properties[:currency], properties, @plugin.kb_apis.create_context(@call_context.tenant_id))
     payment_response.status.should == :PENDING
 
@@ -211,7 +210,13 @@ describe Killbill::PayuLatam::PaymentPlugin do
     response.payment_processor_account_id.should == 'colombia'
     response.kb_tenant_id.should == @call_context.tenant_id
 
-    # Verify the payment in PayU
+    # Verify the pending payment has been created in Kill Bill
+    @payment_api.payments.size.should == nb_payments + 1
+    payment = @payment_api.payments[-1]
+    payment.transactions.size.should == 1
+    payment.transactions[0].external_key.should == payment_properties[:externalKey]
+
+    # Verify the payment in PayU (simulate the Kill Bill polling)
     t_info_plugins = @plugin.get_payment_info(@pm.kb_account_id, payment.id, properties, @plugin.kb_apis.create_context(@call_context.tenant_id))
     t_info_plugins.size.should == 1
     t_info_plugin = t_info_plugins[0]
@@ -227,6 +232,9 @@ describe Killbill::PayuLatam::PaymentPlugin do
 
   def valid_cc_info
     {
+        # To work-around fraud detection bugs in the sandbox
+        :country      => 'BR',
+        :zip          => '19999-999',
         # We can't use the default credit card number as it's seen as a US one (the testing account doesn't allow international credit cards)
         :cc_number    => '4422120000000008',
         # Enter APPROVED for the cardholder name value if you want the transaction to be approved or REJECTED if you want it to be rejected

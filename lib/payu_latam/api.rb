@@ -18,6 +18,14 @@ module Killbill #:nodoc:
               ::Killbill::PayuLatam::PayuLatamResponse)
       end
 
+      def on_event(event)
+        # Require to deal with per tenant configuration invalidation
+        super(event)
+        #
+        # Custom event logic could be added below...
+        #
+      end
+
       def authorize_payment(kb_account_id, kb_payment_id, kb_payment_transaction_id, kb_payment_method_id, amount, currency, properties, context)
         # Pass extra parameters for the gateway here
         options = {}
@@ -60,7 +68,9 @@ module Killbill #:nodoc:
                                                                 :authorization                => [payu_order_id, payu_transaction_id].join(';'),
                                                                 :payment_processor_account_id => payment_processor_account_id,
                                                                 :kb_tenant_id                 => context.tenant_id,
-                                                                :success                      => true)
+                                                                :success                      => true,
+                                                                :created_at                   => Time.now.utc,
+                                                                :updated_at                   => Time.now.utc)
 
           # Get the payment status from PayU (we are required to fetch the status from PayU within 7 minutes of the URL creation)
           get_payment_transaction_info_from_payu(kb_payment_id, kb_payment_transaction_id, amount, currency, properties_to_hash(properties), context.tenant_id, response)
@@ -99,6 +109,8 @@ module Killbill #:nodoc:
 
       def get_payment_info(kb_account_id, kb_payment_id, properties, context)
         t_info_plugins = super(kb_account_id, kb_payment_id, properties, context)
+
+        t_info_plugins.reject! { |t_info_plugin| t_info_plugin.status == :UNDEFINED }
 
         t_info_plugins = get_payment_info_from_payu(kb_payment_id, properties_to_hash(properties), context) if t_info_plugins.empty?
 

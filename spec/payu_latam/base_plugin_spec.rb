@@ -1,9 +1,12 @@
 require 'spec_helper'
 
 describe Killbill::PayuLatam::PaymentPlugin do
+
+  include ::Killbill::Plugin::ActiveMerchant::RSpec
+
   before(:each) do
     Dir.mktmpdir do |dir|
-      file = File.new(File.join(dir, 'payu_latam.yml'), "w+")
+      file = File.new(File.join(dir, 'payu_latam.yml'), 'w+')
       file.write(<<-eos)
 :payu_latam:
   :test: true
@@ -14,11 +17,7 @@ describe Killbill::PayuLatam::PaymentPlugin do
       eos
       file.close
 
-      @plugin              = Killbill::PayuLatam::PaymentPlugin.new
-      @plugin.logger       = Logger.new(STDOUT)
-      @plugin.logger.level = Logger::INFO
-      @plugin.conf_dir     = File.dirname(file)
-      @plugin.kb_apis      = Killbill::Plugin::KillbillApi.new('payu_latam', {})
+      @plugin = build_plugin(::Killbill::PayuLatam::PaymentPlugin, 'payu_latam', File.dirname(file))
 
       # Start the plugin here - since the config file will be deleted
       @plugin.start_plugin

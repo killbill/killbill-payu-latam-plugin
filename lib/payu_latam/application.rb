@@ -18,11 +18,7 @@ end
 
 helpers do
   def plugin(session = {})
-    ::Killbill::PayuLatam::PrivatePaymentPlugin.new(:payu_latam,
-                                                            ::Killbill::PayuLatam::PayuLatamPaymentMethod,
-                                                            ::Killbill::PayuLatam::PayuLatamTransaction,
-                                                            ::Killbill::PayuLatam::PayuLatamResponse,
-                                                            session)
+    ::Killbill::PayuLatam::PrivatePaymentPlugin.new(session)
   end
 end
 
