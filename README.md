@@ -202,7 +202,7 @@ curl -v \
 
 Notes:
 * Make sure to replace *ACCOUNT_ID* with the id of the Kill Bill account
-
+* This call can take some time, make sure to update the plugin timeout accordingly (property `org.killbill.payment.plugin.timeout`)
 
 Here is what happens behind the scenes:
 
