@@ -5,10 +5,51 @@ Plugin to use [PayU Latam](http://www.payulatam.com/) as a gateway.
 
 Release builds are available on [Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22org.kill-bill.billing.plugin.ruby%22%20AND%20a%3A%22payu-latam-plugin%22) with coordinates `org.kill-bill.billing.plugin.ruby:payu-latam-plugin`.
 
+Kill Bill compatibility
+-----------------------
+
+| Plugin version | Kill Bill version |
+| -------------: | ----------------: |
+| 0.1.y          | 0.14.z            |
+
 Requirements
 ------------
 
-The plugin needs a database. The latest version of the schema can be found here: https://raw.github.com/killbill/killbill-payu-latam-plugin/master/db/ddl.sql.
+The plugin needs a database. The latest version of the schema can be found [here](https://github.com/killbill/killbill-payu-latam-plugin/blob/master/db/ddl.sql).
+
+Configuration
+-------------
+
+```
+curl -v \
+     -X POST \
+     -u admin:password \
+     -H 'X-Killbill-ApiKey: bob' \
+     -H 'X-Killbill-ApiSecret: lazar' \
+     -H 'X-Killbill-CreatedBy: admin' \
+     -H 'Content-Type: text/plain' \
+     -d ':payu_latam:
+  - :account_id: colombia
+    :test: true
+    :api_login: 11959c415b33d0c
+    :api_key: 6u39nqhq8ftd0hlvnjfs66eh8c
+    :country_account_id: 500538
+    :merchant_id: 500238
+  - :account_id: panama
+    :test: true
+    :api_login: 11959c415b33d0c
+    :api_key: 6u39nqhq8ftd0hlvnjfs66eh8c
+    :country_account_id: 500537
+    :merchant_id: 500238' \
+     http://127.0.0.1:8080/1.0/kb/tenants/uploadPluginConfig/killbill-payu-latam
+```
+
+To go to production, create a `payu_latam.yml` configuration file under `/var/tmp/bundles/plugins/ruby/killbill-payu-latam/x.y.z/` containing the following:
+
+```
+:payu_latam:
+  :test: false
+```
 
 Usage
 -----
