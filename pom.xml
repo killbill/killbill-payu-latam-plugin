@@ -25,7 +25,7 @@
     <groupId>org.kill-bill.billing.plugin.ruby</groupId>
     <artifactId>payu-latam-plugin</artifactId>
     <packaging>pom</packaging>
-    <version>0.0.2</version>
+    <version>0.1.0</version>
     <name>payu-latam-plugin</name>
     <url>http://github.com/killbill/killbill-payu-latam-plugin</url>
     <description>Plugin for accessing PayuLatam as a payment gateway</description>

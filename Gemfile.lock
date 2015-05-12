@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    killbill-payu-latam (0.0.2)
+    killbill-payu-latam (0.1.0)
       actionpack (~> 4.1.0)
       actionview (~> 4.1.0)
       activerecord (~> 4.1.0)
