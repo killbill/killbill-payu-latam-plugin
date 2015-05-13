@@ -47,6 +47,7 @@ Because PayU Latam test servers have an improperly installed cert, you maye need
 ```
 :payu_latam:
   :ssl_strict: false
+  :test: true
 ```
 
 To go to production, specify:
