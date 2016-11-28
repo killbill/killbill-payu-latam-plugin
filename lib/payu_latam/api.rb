@@ -239,7 +239,7 @@ module Killbill #:nodoc:
       private
 
       def get_payment_info_from_payu(kb_payment_id, options, context)
-        kb_payment = @kb_apis.payment_api.get_payment(kb_payment_id, false, [], context)
+        kb_payment = @kb_apis.payment_api.get_payment(kb_payment_id, false, false, [], context)
 
         t_info_plugins = []
         kb_payment.transactions.each do |transaction|

@@ -22,7 +22,7 @@ Gem::Specification.new do |s|
 
   s.rdoc_options << '--exclude' << '.'
 
-  s.add_dependency 'killbill', '~> 7.0'
+  s.add_dependency 'killbill', '~> 8.0'
 
   s.add_dependency 'aktivemerchant', '~> 2.0.0'
   s.add_dependency 'koffsite_payments', '~> 3.0.0'
